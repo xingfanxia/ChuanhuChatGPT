@@ -9,7 +9,6 @@ from modules.utils import *
 from modules.presets import *
 from modules.overwrites import *
 from modules.chat_func import *
-from modules.openai_func import get_usage
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -102,7 +101,6 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         visible=not HIDE_MY_KEY,
                         label="API-Key",
                     )
-                    usageTxt = gr.Markdown(get_usage(my_api_key), elem_id="usage_display")
                     model_select_dropdown = gr.Dropdown(
                         label="选择模型", choices=MODELS, multiselect=False, value=MODELS[0]
                     )
@@ -261,19 +259,15 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
     transfer_input_args = dict(
         fn=transfer_input, inputs=[user_input], outputs=[user_question, user_input, submitBtn, cancelBtn], show_progress=True
     )
-    
-    get_usage_args = dict(
-        fn=get_usage, inputs=[user_api_key], outputs=[usageTxt], show_progress=False
-    )
 
+    keyTxt.submit(submit_key, keyTxt, [user_api_key, status_display])
+    keyTxt.change(submit_key, keyTxt, [user_api_key, status_display])
     # Chatbot
     cancelBtn.click(cancel_outputing, [], [])
 
     user_input.submit(**transfer_input_args).then(**chatgpt_predict_args).then(**end_outputing_args)
-    user_input.submit(**get_usage_args)
 
     submitBtn.click(**transfer_input_args).then(**chatgpt_predict_args).then(**end_outputing_args)
-    submitBtn.click(**get_usage_args)
 
     emptyBtn.click(
         reset_state,
@@ -299,7 +293,6 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         [chatbot, history, status_display, token_count],
         show_progress=True,
     ).then(**end_outputing_args)
-    retryBtn.click(**get_usage_args)
 
     delLastBtn.click(
         delete_last_conversation,
@@ -325,10 +318,6 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         [chatbot, history, status_display, token_count],
         show_progress=True,
     )
-    reduceTokenBtn.click(**get_usage_args)
-    
-    # ChatGPT
-    keyTxt.change(submit_key, keyTxt, [user_api_key, status_display]).then(**get_usage_args)
 
     # Template
     templateRefreshBtn.click(get_template_names, None, [templateFileSelectDropdown])
