@@ -31,7 +31,7 @@ if os.path.exists("config.json"):
         config = json.load(f)
 else:
     config = {}
-    
+
 language = config.get("language", "auto")
 
 if os.path.exists("api_key.txt"):
@@ -64,8 +64,11 @@ if os.environ.get("dockerrun") == "yes":
     dockerflag = True
 
 ## 处理 api-key 以及 允许的用户列表
-my_api_key = config.get("openai_api_key", "") # 在这里输入你的 API 密钥
+my_api_key = config.get("openai_api_key", "")
 my_api_key = os.environ.get("my_api_key", my_api_key)
+
+xmchat_api_key = config.get("xmchat_api_key", "")
+os.environ["XMCHAT_API_KEY"] = xmchat_api_key
 
 ## 多账户机制
 multi_api_key = config.get("multi_api_key", False) # 是否开启多账户机制
