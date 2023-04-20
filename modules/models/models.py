@@ -21,11 +21,11 @@ import aiohttp
 from enum import Enum
 import uuid
 
-from .presets import *
-from .llama_func import *
-from .utils import *
-from . import shared
-from .config import retrieve_proxy
+from ..presets import *
+from ..llama_func import *
+from ..utils import *
+from .. import shared
+from ..config import retrieve_proxy
 from modules import config
 from .base_model import BaseLLMModel, ModelType
 
@@ -460,7 +460,7 @@ class XMChat(BaseLLMModel):
             "uuid": self.last_conv_id,
             "appraise": "good"
         }
-        response = requests.post(self.url, json=data)
+        requests.post(self.url, json=data)
         return "👍点赞成功，，感谢反馈～"
 
     def dislike(self):
@@ -470,7 +470,7 @@ class XMChat(BaseLLMModel):
             "uuid": self.last_conv_id,
             "appraise": "bad"
         }
-        response = requests.post(self.url, json=data)
+        requests.post(self.url, json=data)
         return "👎点踩成功，感谢反馈～"
 
     def prepare_inputs(self, real_inputs, use_websearch, files, reply_language, chatbot):
@@ -577,6 +577,9 @@ def get_model(
             if os.environ.get("XMCHAT_API_KEY") != "":
                 access_key = os.environ.get("XMCHAT_API_KEY")
             model = XMChat(api_key=access_key)
+        elif model_type == ModelType.StableLM:
+            from .StableLM import StableLM_Client
+            model = StableLM_Client(model_name)
         elif model_type == ModelType.Unknown:
             raise ValueError(f"未知模型: {model_name}")
         logging.info(msg)
