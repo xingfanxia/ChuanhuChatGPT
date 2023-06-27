@@ -18,13 +18,13 @@ __all__ = [
     "log_level",
     "advance_docs",
     "update_doc_config",
-    "render_latex",
     "usage_limit",
     "multi_api_key",
     "server_name",
     "server_port",
     "share",
-    "hide_history_when_not_logged_in"
+    "hide_history_when_not_logged_in",
+    "default_chuanhu_assistant_model"
 ]
 
 # 添加一个统一的config文件，避免文件过多造成的疑惑（优先级最低）
@@ -42,11 +42,11 @@ hide_history_when_not_logged_in = config.get("hide_history_when_not_logged_in", 
 
 if os.path.exists("api_key.txt"):
     logging.info("检测到api_key.txt文件，正在进行迁移...")
-    with open("api_key.txt", "r") as f:
+    with open("api_key.txt", "r", encoding="utf-8") as f:
         config["openai_api_key"] = f.read().strip()
     os.rename("api_key.txt", "api_key(deprecated).txt")
     with open("config.json", "w", encoding='utf-8') as f:
-        json.dump(config, f, indent=4)
+        json.dump(config, f, indent=4, ensure_ascii=False)
 
 if os.path.exists("auth.json"):
     logging.info("检测到auth.json文件，正在进行迁移...")
@@ -62,7 +62,7 @@ if os.path.exists("auth.json"):
     config["users"] = auth_list
     os.rename("auth.json", "auth(deprecated).json")
     with open("config.json", "w", encoding='utf-8') as f:
-        json.dump(config, f, indent=4)
+        json.dump(config, f, indent=4, ensure_ascii=False)
 
 ## 处理docker if we are running in Docker
 dockerflag = config.get("dockerflag", False)
@@ -81,12 +81,6 @@ os.environ["MINIMAX_API_KEY"] = minimax_api_key
 minimax_group_id = config.get("minimax_group_id", "")
 os.environ["MINIMAX_GROUP_ID"] = minimax_group_id
 
-render_latex = config.get("render_latex", True)
-
-if render_latex:
-    os.environ["RENDER_LATEX"] = "yes"
-else:
-    os.environ["RENDER_LATEX"] = "no"
 
 usage_limit = os.environ.get("USAGE_LIMIT", config.get("usage_limit", 120))
 
@@ -103,9 +97,14 @@ auth_list = config.get("users", []) # 实际上是使用者的列表
 authflag = len(auth_list) > 0  # 是否开启认证的状态值，改为判断auth_list长度
 
 # 处理自定义的api_host，优先读环境变量的配置，如果存在则自动装配
-api_host = os.environ.get("api_host", config.get("api_host", ""))
-if api_host:
+api_host = os.environ.get("OPENAI_API_BASE", config.get("openai_api_base", None))
+if api_host is not None:
     shared.state.set_api_host(api_host)
+
+default_chuanhu_assistant_model = config.get("default_chuanhu_assistant_model", "gpt-3.5-turbo")
+for x in ["GOOGLE_CSE_ID", "GOOGLE_API_KEY", "WOLFRAM_ALPHA_APPID", "SERPAPI_API_KEY"]:
+    if config.get(x, None) is not None:
+        os.environ[x] = config[x]
 
 @contextmanager
 def retrieve_openai_api(api_key = None):

@@ -12,10 +12,10 @@ from modules.presets import *
 from modules.overwrites import *
 from modules.models.models import get_model
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 gr.Chatbot._postprocess_chat_messages = postprocess_chat_messages
 gr.Chatbot.postprocess = postprocess
-PromptHelper.compact_text_chunks = compact_text_chunks
 
 with open("assets/custom.css", "r", encoding="utf-8") as f:
     customCSS = f.read()
@@ -89,7 +89,6 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                     with gr.Row():
                         single_turn_checkbox = gr.Checkbox(label=i18n("单轮对话"), value=False)
                         use_websearch_checkbox = gr.Checkbox(label=i18n("使用在线搜索"), value=False)
-                        # render_latex_checkbox = gr.Checkbox(label=i18n("渲染LaTeX公式"), value=render_latex, interactive=True, elem_id="render_latex_checkbox")
                     language_select_dropdown = gr.Dropdown(
                         label=i18n("选择回复语言（针对搜索&索引功能）"),
                         choices=REPLY_LANGUAGES,
@@ -98,6 +97,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                     )
                     index_files = gr.Files(label=i18n("上传"), type="file")
                     two_column = gr.Checkbox(label=i18n("双栏pdf"), value=advance_docs["pdf"].get("two_column", False))
+                    summarize_btn = gr.Button(i18n("总结"))
                     # TODO: 公式ocr
                     # formula_ocr = gr.Checkbox(label=i18n("识别公式"), value=advance_docs["pdf"].get("formula_ocr", False))
 
@@ -141,8 +141,11 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                         choices=get_history_names(plain=True),
                                         multiselect=False
                                     )
-                                with gr.Column(scale=1):
-                                    historyRefreshBtn = gr.Button(i18n("🔄 刷新"))
+                                with gr.Row():
+                                    with gr.Column(min_width=42, scale=1):
+                                        historyRefreshBtn = gr.Button(i18n("🔄 刷新"))
+                                    with gr.Column(min_width=42, scale=1):
+                                        historyDeleteBtn = gr.Button(i18n("🗑️ 删除"))
                             with gr.Row():
                                 with gr.Column(scale=6):
                                     saveFileName = gr.Textbox(
@@ -161,7 +164,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
 
                 with gr.Tab(label=i18n("高级")):
                     gr.Markdown(i18n("# ⚠️ 务必谨慎更改 ⚠️\n\n如果无法使用请恢复默认设置"))
-                    gr.HTML(APPEARANCE_SWITCHER, elem_classes="insert_block")
+                    gr.HTML(get_html("appearance_switcher.html").format(label=i18n("切换亮暗色主题")), elem_classes="insert_block")
                     use_streaming_checkbox = gr.Checkbox(
                             label=i18n("实时传输回答"), value=True, visible=ENABLE_STREAMING_OPTION
                         )
@@ -265,7 +268,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         default_btn = gr.Button(i18n("🔙 恢复默认设置"))
 
     gr.Markdown(CHUANHU_DESCRIPTION, elem_id="description")
-    gr.HTML(FOOTER.format(versions=versions_html()), elem_id="footer")
+    gr.HTML(get_html("footer.html").format(versions=versions_html()), elem_id="footer")
 
     # https://github.com/gradio-app/gradio/pull/3296
     def create_greeting(request: gr.Request):
@@ -323,6 +326,10 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         outputs=[saveFileName, systemPromptTxt, chatbot]
     )
 
+    refresh_history_args = dict(
+        fn=get_history_names, inputs=[gr.State(False), user_name], outputs=[historyFileSelectDropdown]
+    )
+
 
     # Chatbot
     cancelBtn.click(interrupt, [current_model], [])
@@ -333,13 +340,15 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
     submitBtn.click(**transfer_input_args).then(**chatgpt_predict_args, api_name="predict").then(**end_outputing_args)
     submitBtn.click(**get_usage_args)
 
-    index_files.change(handle_file_upload, [current_model, index_files, chatbot], [index_files, chatbot, status_display])
+    index_files.change(handle_file_upload, [current_model, index_files, chatbot, language_select_dropdown], [index_files, chatbot, status_display])
+    summarize_btn.click(handle_summarize_index, [current_model, index_files, chatbot, language_select_dropdown], [chatbot, status_display])
 
     emptyBtn.click(
         reset,
         inputs=[current_model],
         outputs=[chatbot, status_display],
         show_progress=True,
+        _js='()=>{clearHistoryHtml();}',
     )
 
     retryBtn.click(**start_outputing_args).then(
@@ -424,7 +433,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         downloadFile,
         show_progress=True,
     )
-    historyRefreshBtn.click(get_history_names, [gr.State(False), user_name], [historyFileSelectDropdown])
+    historyRefreshBtn.click(**refresh_history_args)
+    historyDeleteBtn.click(delete_chat_history, [current_model, historyFileSelectDropdown, user_name], [status_display, historyFileSelectDropdown, chatbot], _js='(a,b,c)=>{return showConfirmationDialog(a, b, c);}')
     historyFileSelectDropdown.change(**load_history_from_file_args)
     downloadFile.change(upload_chat_history, [current_model, downloadFile, user_name], [saveFileName, systemPromptTxt, chatbot])
 
@@ -467,6 +477,7 @@ demo.title = i18n("胖猫🐱🐱🐱GPT")
 if __name__ == "__main__":
     reload_javascript()
     demo.queue(concurrency_count=CONCURRENT_COUNT).launch(
+        blocked_paths=["config.json"],
         server_name=server_name,
         server_port=server_port,
         share=share,
@@ -474,6 +485,3 @@ if __name__ == "__main__":
         favicon_path="./assets/favicon.ico",
         inbrowser=not dockerflag, # 禁止在docker下开启inbrowser
     )
-    # demo.queue(concurrency_count=CONCURRENT_COUNT).launch(server_name="0.0.0.0", server_port=7860, share=False) # 可自定义端口
-    # demo.queue(concurrency_count=CONCURRENT_COUNT).launch(server_name="0.0.0.0", server_port=7860,auth=("在这里填写用户名", "在这里填写密码")) # 可设置用户名与密码
-    # demo.queue(concurrency_count=CONCURRENT_COUNT).launch(auth=("在这里填写用户名", "在这里填写密码")) # 适合Nginx反向代理
