@@ -38,17 +38,26 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         status_display = gr.Markdown(get_geoip(), elem_id="status_display")
     with gr.Row(elem_id="float_display"):
         user_info = gr.Markdown(value="getting user info...", elem_id="user_info")
+        update_info = gr.HTML(get_html("update.html").format(
+            current_version=repo_html(),
+            version_time=version_time(),
+            cancel_btn=i18n("取消"),
+            update_btn=i18n("更新"),
+            seenew_btn=i18n("详情"),
+            ok_btn=i18n("好"),
+            ), visible=check_update)
 
-    with gr.Row().style(equal_height=True):
+    with gr.Row(equal_height=True):
         with gr.Column(scale=5):
             with gr.Row():
-                chatbot = gr.Chatbot(label="Chuanhu Chat", elem_id="chuanhu_chatbot").style(height="100%")
+                chatbot = gr.Chatbot(label="Chuanhu Chat", elem_id="chuanhu_chatbot", latex_delimiters=latex_delimiters_set, height=700)
             with gr.Row():
                 with gr.Column(min_width=225, scale=12):
                     user_input = gr.Textbox(
                         elem_id="user_input_tb",
-                        show_label=False, placeholder=i18n("在这里输入")
-                    ).style(container=False)
+                        show_label=False, placeholder=i18n("在这里输入"),
+                        container=False
+                    )
                 with gr.Column(min_width=42, scale=1):
                     submitBtn = gr.Button(value="", variant="primary", elem_id="submit_btn")
                     cancelBtn = gr.Button(value="", variant="secondary", visible=False, elem_id="cancel_btn")
@@ -77,9 +86,9 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         label="API-Key",
                     )
                     if multi_api_key:
-                        usageTxt = gr.Markdown(i18n("多账号模式已开启，无需输入key，可直接开始对话"), elem_id="usage_display", elem_classes="insert_block")
+                        usageTxt = gr.Markdown(i18n("多账号模式已开启，无需输入key，可直接开始对话"), elem_id="usage_display", elem_classes="insert_block", visible=show_api_billing)
                     else:
-                        usageTxt = gr.Markdown(i18n("**发送消息** 或 **提交key** 以显示额度"), elem_id="usage_display", elem_classes="insert_block")
+                        usageTxt = gr.Markdown(i18n("**发送消息** 或 **提交key** 以显示额度"), elem_id="usage_display", elem_classes="insert_block", visible=show_api_billing)
                     model_select_dropdown = gr.Dropdown(
                         label=i18n("选择模型"), choices=MODELS, multiselect=False, value=MODELS[DEFAULT_MODEL], interactive=True
                     )
@@ -87,8 +96,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         label=i18n("选择LoRA模型"), choices=[], multiselect=False, interactive=True, visible=False
                     )
                     with gr.Row():
-                        single_turn_checkbox = gr.Checkbox(label=i18n("单轮对话"), value=False)
-                        use_websearch_checkbox = gr.Checkbox(label=i18n("使用在线搜索"), value=False)
+                        single_turn_checkbox = gr.Checkbox(label=i18n("单轮对话"), value=False, elem_classes="switch_checkbox")
+                        use_websearch_checkbox = gr.Checkbox(label=i18n("使用在线搜索"), value=False, elem_classes="switch_checkbox")
                     language_select_dropdown = gr.Dropdown(
                         label=i18n("选择回复语言（针对搜索&索引功能）"),
                         choices=REPLY_LANGUAGES,
@@ -107,8 +116,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         placeholder=i18n("在这里输入System Prompt..."),
                         label="System prompt",
                         value=INITIAL_SYSTEM_PROMPT,
-                        lines=10,
-                    ).style(container=False)
+                        lines=10
+                    )
                     with gr.Accordion(label=i18n("加载Prompt模板"), open=True):
                         with gr.Column():
                             with gr.Row():
@@ -118,7 +127,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                         choices=get_template_names(plain=True),
                                         multiselect=False,
                                         value=get_template_names(plain=True)[0],
-                                    ).style(container=False)
+                                        container=False,
+                                    )
                                 with gr.Column(scale=1):
                                     templateRefreshBtn = gr.Button(i18n("🔄 刷新"))
                             with gr.Row():
@@ -129,7 +139,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                             get_template_names(plain=True)[0], mode=1
                                         ),
                                         multiselect=False,
-                                    ).style(container=False)
+                                        container=False,
+                                    )
 
                 with gr.Tab(label=i18n("保存/加载")):
                     with gr.Accordion(label=i18n("保存/加载对话历史记录"), open=True):
@@ -139,7 +150,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                     historyFileSelectDropdown = gr.Dropdown(
                                         label=i18n("从列表中加载对话"),
                                         choices=get_history_names(plain=True),
-                                        multiselect=False
+                                        multiselect=False,
+                                        container=False,
                                     )
                                 with gr.Row():
                                     with gr.Column(min_width=42, scale=1):
@@ -153,7 +165,8 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                         placeholder=i18n("设置文件名: 默认为.json，可选为.md"),
                                         label=i18n("设置保存文件名"),
                                         value=i18n("对话历史记录"),
-                                    ).style(container=True)
+                                        container=False,
+                                    )
                                 with gr.Column(scale=1):
                                     saveHistoryBtn = gr.Button(i18n("💾 保存对话"))
                                     exportMarkdownBtn = gr.Button(i18n("📝 导出为Markdown"))
@@ -163,11 +176,12 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                                     downloadFile = gr.File(interactive=True)
 
                 with gr.Tab(label=i18n("高级")):
-                    gr.Markdown(i18n("# ⚠️ 务必谨慎更改 ⚠️\n\n如果无法使用请恢复默认设置"))
                     gr.HTML(get_html("appearance_switcher.html").format(label=i18n("切换亮暗色主题")), elem_classes="insert_block")
                     use_streaming_checkbox = gr.Checkbox(
-                            label=i18n("实时传输回答"), value=True, visible=ENABLE_STREAMING_OPTION
+                            label=i18n("实时传输回答"), value=True, visible=ENABLE_STREAMING_OPTION, elem_classes="switch_checkbox"
                         )
+                    checkUpdateBtn = gr.Button(i18n("🔄 检查更新..."), visible=check_update)
+                    gr.Markdown(i18n("# ⚠️ 务必谨慎更改 ⚠️"), elem_id="advanced_warning")
                     with gr.Accordion(i18n("参数"), open=False):
                         temperature_slider = gr.Slider(
                             minimum=-0,
@@ -195,7 +209,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                         )
                         stop_sequence_txt = gr.Textbox(
                             show_label=True,
-                            placeholder=i18n("在这里输入停止符，用英文逗号隔开..."),
+                            placeholder=i18n("停止符，用英文逗号隔开..."),
                             label="stop",
                             value="",
                             lines=1,
@@ -255,6 +269,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                             label="API-Host",
                             value=config.api_host or shared.API_HOST,
                             lines=1,
+                            container=False,
                         )
                         changeAPIURLBtn = gr.Button(i18n("🔄 切换API地址"))
                         proxyTxt = gr.Textbox(
@@ -263,6 +278,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
                             label=i18n("代理地址（示例：http://127.0.0.1:10809）"),
                             value="",
                             lines=2,
+                            container=False,
                         )
                         changeProxyBtn = gr.Button(i18n("🔄 设置代理地址"))
                         default_btn = gr.Button(i18n("🔙 恢复默认设置"))
@@ -399,7 +415,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
     keyTxt.change(set_key, [current_model, keyTxt], [user_api_key, status_display], api_name="set_key").then(**get_usage_args)
     keyTxt.submit(**get_usage_args)
     single_turn_checkbox.change(set_single_turn, [current_model, single_turn_checkbox], None)
-    model_select_dropdown.change(get_model, [model_select_dropdown, lora_select_dropdown, user_api_key, temperature_slider, top_p_slider, systemPromptTxt, user_name], [current_model, status_display, chatbot, lora_select_dropdown], show_progress=True, api_name="get_model")
+    model_select_dropdown.change(get_model, [model_select_dropdown, lora_select_dropdown, user_api_key, temperature_slider, top_p_slider, systemPromptTxt, user_name], [current_model, status_display, chatbot, lora_select_dropdown, user_api_key, keyTxt], show_progress=True, api_name="get_model")
     model_select_dropdown.change(toggle_like_btn_visibility, [model_select_dropdown], [like_dislike_area], show_progress=False)
     lora_select_dropdown.change(get_model, [model_select_dropdown, lora_select_dropdown, user_api_key, temperature_slider, top_p_slider, systemPromptTxt, user_name], [current_model, status_display, chatbot], show_progress=True)
 
@@ -465,6 +481,7 @@ with gr.Blocks(css=customCSS, theme=small_and_beautiful_theme) as demo:
         [status_display],
         show_progress=True,
     )
+    checkUpdateBtn.click(fn=None, _js='()=>{manualCheckUpdate();}')
 
 logging.info(
     colorama.Back.GREEN
