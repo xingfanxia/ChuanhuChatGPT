@@ -243,7 +243,7 @@ def escape_markdown(text):
     Escape Markdown special characters to HTML-safe equivalents.
     """
     escape_chars = {
-        ' ': '&nbsp;',
+        # ' ': '&nbsp;',
         '_': '&#95;',
         '*': '&#42;',
         '[': '&#91;',
@@ -264,6 +264,7 @@ def escape_markdown(text):
         '$': '&#36;',
         ':': '&#58;',
     }
+    text = text.replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
     return ''.join(escape_chars.get(c, c) for c in text)
 
 
@@ -588,6 +589,19 @@ def version_time():
     except Exception:
         commit_time = "unknown"
     return commit_time
+
+def update_chuanhu():
+    git = os.environ.get('GIT', "git")
+    pip = os.environ.get('PIP', "pip")
+    try:
+        run(f"{git} fetch --all && ({git} pull https://github.com/GaiZhenbiao/ChuanhuChatGPT.git main -f || ({git} stash && {git} pull https://github.com/GaiZhenbiao/ChuanhuChatGPT.git main -f && {git} stash pop)) && {pip} install -r requirements.txt")
+        logging.info("Successfully updated")
+        status = '<span id="update-status" class="hideK">success</span>'
+        return gr.Markdown.update(value=i18n("更新成功，请重启本程序")+status)
+    except Exception:
+        logging.info("Failed to update")
+        status = '<span id="update-status" class="hideK">failure</span>'
+        return gr.Markdown.update(value=i18n("更新失败，请尝试[手动更新](https://github.com/GaiZhenbiao/ChuanhuChatGPT/wiki/使用教程#手动更新)")+status)
 
 def get_html(filename):
     path = os.path.join(shared.chuanhu_path, "assets", "html", filename)
