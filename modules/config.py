@@ -16,7 +16,6 @@ __all__ = [
     "auth_list",
     "dockerflag",
     "retrieve_proxy",
-    "log_level",
     "advance_docs",
     "update_doc_config",
     "usage_limit",
@@ -28,7 +27,8 @@ __all__ = [
     "latex_delimiters_set",
     "hide_history_when_not_logged_in",
     "default_chuanhu_assistant_model",
-    "show_api_billing"
+    "show_api_billing",
+    "chat_name_method_index",
 ]
 
 # 添加一个统一的config文件，避免文件过多造成的疑惑（优先级最低）
@@ -46,15 +46,12 @@ def load_config_to_environ(key_list):
         if key in config:
             os.environ[key.upper()] = os.environ.get(key.upper(), config[key])
 
-
-lang_config = config.get("language", "auto")
-language = os.environ.get("LANGUAGE", lang_config)
-
 hide_history_when_not_logged_in = config.get(
     "hide_history_when_not_logged_in", False)
 check_update = config.get("check_update", True)
 show_api_billing = config.get("show_api_billing", False)
 show_api_billing = bool(os.environ.get("SHOW_API_BILLING", show_api_billing))
+chat_name_method_index = config.get("chat_name_method_index", 2)
 
 if os.path.exists("api_key.txt"):
     logging.info("检测到api_key.txt文件，正在进行迁移...")
@@ -92,10 +89,15 @@ os.environ["OPENAI_API_KEY"] = my_api_key
 os.environ["OPENAI_EMBEDDING_API_KEY"] = my_api_key
 
 if config.get("legacy_api_usage", False):
+    sensitive_id = my_api_key
+else:
     sensitive_id = config.get("sensitive_id", "")
     sensitive_id = os.environ.get("SENSITIVE_ID", sensitive_id)
-else:
-    sensitive_id = my_api_key
+
+# 模型配置
+if "extra_models" in  config:
+    presets.MODELS.extend(config["extra_models"])
+    logging.info(f"已添加额外的模型：{config['extra_models']}")
 
 google_palm_api_key = config.get("google_palm_api_key", "")
 google_palm_api_key = os.environ.get(
@@ -109,6 +111,22 @@ minimax_api_key = config.get("minimax_api_key", "")
 os.environ["MINIMAX_API_KEY"] = minimax_api_key
 minimax_group_id = config.get("minimax_group_id", "")
 os.environ["MINIMAX_GROUP_ID"] = minimax_group_id
+
+midjourney_proxy_api_base = config.get("midjourney_proxy_api_base", "")
+os.environ["MIDJOURNEY_PROXY_API_BASE"] = midjourney_proxy_api_base
+midjourney_proxy_api_secret = config.get("midjourney_proxy_api_secret", "")
+os.environ["MIDJOURNEY_PROXY_API_SECRET"] = midjourney_proxy_api_secret
+midjourney_discord_proxy_url = config.get("midjourney_discord_proxy_url", "")
+os.environ["MIDJOURNEY_DISCORD_PROXY_URL"] = midjourney_discord_proxy_url
+midjourney_temp_folder = config.get("midjourney_temp_folder", "")
+os.environ["MIDJOURNEY_TEMP_FOLDER"] = midjourney_temp_folder
+
+spark_api_key = config.get("spark_api_key", "")
+os.environ["SPARK_API_KEY"] = spark_api_key
+spark_appid = config.get("spark_appid", "")
+os.environ["SPARK_APPID"] = spark_appid
+spark_api_secret = config.get("spark_api_secret", "")
+os.environ["SPARK_API_SECRET"] = spark_api_secret
 
 load_config_to_environ(["openai_api_type", "azure_openai_api_key", "azure_openai_api_base_url",
                        "azure_openai_api_version", "azure_deployment_name", "azure_embedding_deployment_name", "azure_embedding_model_name"])
@@ -155,12 +173,6 @@ def retrieve_openai_api(api_key=None):
     os.environ["OPENAI_API_KEY"] = old_api_key
 
 
-# 处理log
-log_level = config.get("log_level", "INFO")
-logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s [%(levelname)s] [%(filename)s:%(lineno)d] %(message)s",
-)
 
 # 处理代理：
 http_proxy = os.environ.get("HTTP_PROXY", "")
@@ -267,3 +279,15 @@ except ValueError:
     pass
 
 share = config.get("share", False)
+
+# avatar
+bot_avatar = config.get("bot_avatar", "default")
+user_avatar = config.get("user_avatar", "default")
+if bot_avatar == "" or bot_avatar == "none" or bot_avatar is None:
+    bot_avatar = None
+elif bot_avatar == "default":
+    bot_avatar = "web_assets/chatbot.png"
+if user_avatar == "" or user_avatar == "none" or user_avatar is None:
+    user_avatar = None
+elif user_avatar == "default":
+    user_avatar = "web_assets/user.png"
