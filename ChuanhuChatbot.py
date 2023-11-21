@@ -135,6 +135,7 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                         label="Chuanhu Chat",
                         elem_id="chuanhu-chatbot",
                         latex_delimiters=latex_delimiters_set,
+                        sanitize_html=False,
                         # height=700,
                         show_label=False,
                         avatar_images=[config.user_avatar, config.bot_avatar],
@@ -196,6 +197,14 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                         obj="toolbox"), elem_classes="close-btn")
                 with gr.Tabs(elem_id="chuanhu-toolbox-tabs"):
                     with gr.Tab(label=i18n("对话")):
+                        keyTxt = gr.Textbox(
+                            show_label=True,
+                            placeholder=f"Your API-key...",
+                            value=hide_middle_chars(user_api_key.value),
+                            type="password",
+                            visible=not HIDE_MY_KEY,
+                            label="API-Key",
+                        )
                         with gr.Accordion(label="Prompt", open=True):
                             systemPromptTxt = gr.Textbox(
                                 show_label=True,
@@ -236,7 +245,7 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                             use_websearch_checkbox = gr.Checkbox(label=i18n(
                                 "使用在线搜索"), value=False, elem_classes="switch-checkbox", elem_id="gr-websearch-cb", visible=False)
                             index_files = gr.Files(label=i18n(
-                                "上传"), type="file", elem_id="upload-index-file")
+                                "上传"), type="file", file_types=[".pdf", ".docx", ".pptx", ".epub", ".xlsx", ".txt", "text", "image"], elem_id="upload-index-file")
                             two_column = gr.Checkbox(label=i18n(
                                 "双栏pdf"), value=advance_docs["pdf"].get("two_column", False))
                             summarize_btn = gr.Button(i18n("总结"))
@@ -339,14 +348,6 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                         obj="box"), elem_classes="close-btn")
                 with gr.Tabs(elem_id="chuanhu-setting-tabs"):
                     with gr.Tab(label=i18n("模型")):
-                        keyTxt = gr.Textbox(
-                            show_label=True,
-                            placeholder=f"Your API-key...",
-                            value=hide_middle_chars(user_api_key.value),
-                            type="password",
-                            visible=not HIDE_MY_KEY,
-                            label="API-Key",
-                        )
                         if multi_api_key:
                             usageTxt = gr.Markdown(i18n(
                                 "多账号模式已开启，无需输入key，可直接开始对话"), elem_id="usage-display", elem_classes="insert-block", visible=show_api_billing)
@@ -645,6 +646,8 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                                  current_model, status_display, chatbot, lora_select_dropdown, user_api_key, keyTxt], show_progress=True, api_name="get_model")
     model_select_dropdown.change(toggle_like_btn_visibility, [model_select_dropdown], [
                                  like_dislike_area], show_progress=False)
+    # model_select_dropdown.change(
+    #     toggle_file_type, [model_select_dropdown], [index_files], show_progress=False)
     lora_select_dropdown.change(get_model, [model_select_dropdown, lora_select_dropdown, user_api_key, temperature_slider,
                                 top_p_slider, systemPromptTxt, user_name, current_model], [current_model, status_display, chatbot], show_progress=True)
 
@@ -797,7 +800,7 @@ demo.title = i18n("胖猫🐱🐱🐱GPT")
 if __name__ == "__main__":
     reload_javascript()
     demo.queue(concurrency_count=CONCURRENT_COUNT).launch(
-        blocked_paths=["config.json"],
+        allowed_paths=["history", "web_assets"],
         server_name=server_name,
         server_port=server_port,
         share=share,

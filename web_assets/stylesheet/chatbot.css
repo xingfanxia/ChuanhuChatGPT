@@ -42,7 +42,13 @@ hr.append-display {
 .agent-prefix {
     font-size: smaller; 
     opacity: 0.6;
-    padding: 6px 0 4px;
+    padding: 6px 0 12px;
+}
+.raw-message p.agent-prefix + p.agent-prefix {
+    margin-top: -1.2em !important;
+}
+.md-message p.agent-prefix + p.agent-prefix {
+    margin-top: -1.8em !important;
 }
 .agent-prefix::before {
     content: '🐯';
@@ -215,6 +221,14 @@ hr.append-display {
 }
 .message .raw-message p {
     margin:0 !important;
+}
+.message .raw-message pre.fake-pre {
+    background: unset;
+    margin: unset;
+    font-size: unset;
+    /* font-family: unset; */
+    padding: unset;
+    white-space: inherit;
 }
 .message .raw-message {
     display: block;
