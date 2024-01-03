@@ -249,7 +249,7 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                                                 container=False,
                                             )
                         gr.Markdown("---", elem_classes="hr-line")
-                        with gr.Accordion(label=i18n("知识库"), open=True):
+                        with gr.Accordion(label=i18n("知识库"), open=True, elem_id="gr-kb-accordion"):
                             use_websearch_checkbox = gr.Checkbox(label=i18n(
                                 "使用在线搜索"), value=False, elem_classes="switch-checkbox", elem_id="gr-websearch-cb", visible=False)
                             index_files = gr.Files(label=i18n(
@@ -477,6 +477,8 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
                     deleteRound_i18n=i18n("删除这轮问答"),
                     renameChat_i18n=i18n("重命名该对话"),
                     validFileName_i18n=i18n("请输入有效的文件名，不要包含以下特殊字符："),
+                    clearFileHistoryMsg_i18n=i18n("⚠️请先删除知识库中的历史文件，再尝试上传！"),
+                    dropUploadMsg_i18n=i18n("释放文件以上传"),
                 ))
             with gr.Box(elem_id="fake-gradio-components", visible=False):
                 updateChuanhuBtn = gr.Button(
@@ -672,7 +674,7 @@ with gr.Blocks(theme=small_and_beautiful_theme) as demo:
     # S&L
     renameHistoryBtn.click(
         rename_chat_history,
-        [current_model, saveFileName, chatbot, user_name],
+        [current_model, saveFileName, chatbot],
         [historySelectList],
         show_progress=True,
         _js='(a,b,c,d)=>{return saveChatHistory(a,b,c,d);}'
@@ -801,5 +803,5 @@ if __name__ == "__main__":
         share=share,
         auth=auth_from_conf if authflag else None,
         favicon_path="./web_assets/favicon.ico",
-        inbrowser=not dockerflag,  # 禁止在docker下开启inbrowser
+        inbrowser=autobrowser and not dockerflag,  # 禁止在docker下开启inbrowser
     )
